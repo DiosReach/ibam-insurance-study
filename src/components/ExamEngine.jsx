@@ -33,7 +33,7 @@ function shuffle(arr) {
   return a
 }
 
-export default function ExamEngine({ initialMode = 'practice', onExit }) {
+export default function ExamEngine({ initialMode = 'practice', onExit, onOpenReview }) {
   const ctx = useApp()
   const { recordExam, toggleFlagQuestion, clearFlagged } = ctx
   const examHistory = ctx.examHistory ?? []
@@ -84,12 +84,19 @@ export default function ExamEngine({ initialMode = 'practice', onExit }) {
     const score = questions.reduce((acc, q) => acc + (answers[q.id] === q.answer ? 1 : 0), 0)
     const durationSec = Math.round((Date.now() - (startedAtRef.current || Date.now())) / 1000)
     const byCategory = {}
+    const responses = []
     questions.forEach(q => {
       const bucket = (byCategory[q.category] ??= { right: 0, total: 0 })
       bucket.total += 1
       if (answers[q.id] === q.answer) bucket.right += 1
+      const selected = answers[q.id]
+      responses.push({
+        questionId: q.id,
+        selectedOption: selected === undefined ? null : selected,
+        isCorrect: selected === q.answer
+      })
     })
-    recordExam({ mode, score, total: questions.length, durationSec, byCategory })
+    recordExam({ mode, score, total: questions.length, durationSec, byCategory, responses })
     setStage('review')
   }
 
@@ -105,6 +112,7 @@ export default function ExamEngine({ initialMode = 'practice', onExit }) {
         flaggedCount={flaggedCount}
         onClearFlagged={clearFlagged}
         onExit={onExit}
+        onOpenReview={onOpenReview}
       />
     )
   }
@@ -191,7 +199,7 @@ export default function ExamEngine({ initialMode = 'practice', onExit }) {
 
 /* ─── Setup ──────────────────────────────────────────────────────────── */
 
-function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
+function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit, onOpenReview }) {
   const [chapterFilter, setChapterFilter] = useState('all')
 
   const filteredCount = useMemo(() => {
@@ -298,31 +306,16 @@ function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
 
       {history.length > 0 && (
         <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-            Recent results
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Recent results
+            </h2>
+            <span className="text-[10px] font-medium text-slate-400">Tap to review</span>
+          </div>
           <div className="space-y-2">
-            {history.slice(0, 5).map(e => {
-              const pct = Math.round((e.score / e.total) * 100)
-              const passing = pct >= 70
-              return (
-                <div key={e.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm
-                    ${passing ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                              : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'}`}>
-                    {pct}%
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {e.score} / {e.total} correct
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {labelForMode(e.mode)} • {new Date(e.date).toLocaleDateString()} • {Math.round(e.durationSec / 60)} min
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
+            {history.slice(0, 5).map(e => (
+              <HistoryRow key={e.id} entry={e} onOpen={onOpenReview} />
+            ))}
           </div>
         </section>
       )}
@@ -335,6 +328,42 @@ function labelForMode(m) {
   if (m === 'drill') return 'Flag Drill'
   return 'Practice'
 }
+
+function HistoryRow({ entry, onOpen }) {
+  const pct = Math.round((entry.score / entry.total) * 100)
+  const passing = pct >= 70
+  const clickable = typeof onOpen === 'function'
+  const Comp = clickable ? 'button' : 'div'
+  const dt = new Date(entry.date)
+  return (
+    <Comp
+      onClick={clickable ? () => onOpen(entry.id) : undefined}
+      className={`w-full text-left flex items-center gap-3 p-3 rounded-lg transition
+        ${clickable
+          ? 'bg-slate-50 hover:bg-brand-50 dark:bg-slate-800/50 dark:hover:bg-brand-950/30 cursor-pointer group'
+          : 'bg-slate-50 dark:bg-slate-800/50'}`}
+    >
+      <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm
+        ${passing ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'}`}>
+        {pct}%
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+          {entry.score} / {entry.total} correct
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+          {labelForMode(entry.mode)} • {dt.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })} {dt.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })} • {Math.round(entry.durationSec / 60)} min
+        </p>
+      </div>
+      {clickable && (
+        <ChevronRight className="shrink-0 w-4 h-4 text-slate-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition" />
+      )}
+    </Comp>
+  )
+}
+
+export { HistoryRow }
 
 function CategoryChip({ label, active, count, onClick }) {
   return (

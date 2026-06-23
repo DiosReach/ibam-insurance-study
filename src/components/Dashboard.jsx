@@ -13,6 +13,7 @@ import {
 import { useApp } from '../context/AppContext'
 import { curriculum } from '../data/curriculum'
 import { questionPool } from '../data/questions'
+import { HistoryRow } from './ExamEngine'
 
 const TOTAL = 15
 
@@ -29,8 +30,8 @@ const categoryColor = {
   Specialty:    'bg-lime-100 text-lime-700 dark:bg-lime-950/40 dark:text-lime-300'
 }
 
-export default function Dashboard({ onOpenDay, onStartExam, onNavigate }) {
-  const { completedDays, examHistory } = useApp()
+export default function Dashboard({ onOpenDay, onStartExam, onNavigate, onOpenReview }) {
+  const { completedDays, examHistory = [] } = useApp()
   const completedInRange = completedDays.filter(n => n >= 1 && n <= TOTAL).length
   const pct = Math.round((completedInRange / TOTAL) * 100)
   const nextCh = curriculum.find(c => !completedDays.includes(c.chapter)) ?? curriculum[TOTAL - 1]
@@ -119,6 +120,25 @@ export default function Dashboard({ onOpenDay, onStartExam, onNavigate }) {
           onClick={() => onNavigate?.('mpi')}
         />
       </section>
+
+      {examHistory.length > 0 && (
+        <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Results</h2>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Tap to review</span>
+          </div>
+          <div className="space-y-2">
+            {examHistory.slice(0, 3).map(e => (
+              <HistoryRow key={e.id} entry={e} onOpen={onOpenReview} />
+            ))}
+          </div>
+          {examHistory.length > 3 && (
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              + {examHistory.length - 3} more in the Mock Exam screen.
+            </p>
+          )}
+        </section>
+      )}
 
       <section>
         <div className="flex items-center justify-between mb-3">
