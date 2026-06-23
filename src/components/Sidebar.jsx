@@ -1,17 +1,21 @@
 import {
   BookOpen,
+  Car,
   GraduationCap,
   LayoutDashboard,
   Moon,
+  ScrollText,
   Sun,
   Trash2
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const links = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'study',     label: 'Study',     icon: BookOpen },
-  { id: 'exam',      label: 'Mock Exam', icon: GraduationCap }
+  { id: 'dashboard',  label: 'Dashboard',       icon: LayoutDashboard },
+  { id: 'study',      label: 'Study',           icon: BookOpen },
+  { id: 'exam',       label: 'Mock Exam',       icon: GraduationCap },
+  { id: 'cheatsheet', label: 'Statutory Sheet', icon: ScrollText },
+  { id: 'mpi',        label: 'MPI Calculator',  icon: Car }
 ]
 
 export default function Sidebar({ view, onNavigate }) {

@@ -4,9 +4,10 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 const AppContext = createContext(null)
 
 const DEFAULT_PROGRESS = {
-  completedDays: [],     // array of day numbers
-  flashcardMastery: {},  // { "1-Pure Risk": "known" | "review" }
-  examHistory: [],       // [{ id, date, mode, score, total, durationSec, byCategory: {...} }]
+  completedDays: [],      // array of day numbers
+  flashcardMastery: {},   // { "1-Pure Risk": "known" | "review" }
+  examHistory: [],        // [{ id, date, mode, score, total, durationSec, byCategory: {...} }]
+  flaggedQuestions: {},   // { [qid]: true }
   theme: 'light'
 }
 
@@ -48,13 +49,35 @@ export function AppProvider({ children }) {
     }))
   }, [setState])
 
+  const toggleFlagQuestion = useCallback((qid) => {
+    setState(s => {
+      const next = { ...s.flaggedQuestions }
+      if (next[qid]) delete next[qid]
+      else next[qid] = true
+      return { ...s, flaggedQuestions: next }
+    })
+  }, [setState])
+
+  const clearFlagged = useCallback(() => {
+    setState(s => ({ ...s, flaggedQuestions: {} }))
+  }, [setState])
+
   const resetAll = useCallback(() => {
     setState(DEFAULT_PROGRESS)
   }, [setState])
 
   const value = useMemo(
-    () => ({ ...state, toggleTheme, toggleDayComplete, markFlashcard, recordExam, resetAll }),
-    [state, toggleTheme, toggleDayComplete, markFlashcard, recordExam, resetAll]
+    () => ({
+      ...state,
+      toggleTheme,
+      toggleDayComplete,
+      markFlashcard,
+      recordExam,
+      toggleFlagQuestion,
+      clearFlagged,
+      resetAll
+    }),
+    [state, toggleTheme, toggleDayComplete, markFlashcard, recordExam, toggleFlagQuestion, clearFlagged, resetAll]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

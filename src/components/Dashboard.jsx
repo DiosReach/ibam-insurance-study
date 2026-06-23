@@ -1,9 +1,11 @@
 import {
+  Car,
   Check,
   ChevronRight,
   Clock,
   Flame,
   GraduationCap,
+  ScrollText,
   Sparkles,
   Target,
   TrendingUp
@@ -25,7 +27,7 @@ const categoryColor = {
   Review:             'bg-slate-200 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200'
 }
 
-export default function Dashboard({ onOpenDay, onStartExam }) {
+export default function Dashboard({ onOpenDay, onStartExam, onNavigate }) {
   const { completedDays, examHistory } = useApp()
   const pct = Math.round((completedDays.length / 14) * 100)
   const nextDay = curriculum.find(d => !completedDays.includes(d.day)) ?? curriculum[13]
@@ -98,6 +100,23 @@ export default function Dashboard({ onOpenDay, onStartExam }) {
         </div>
       </section>
 
+      <section className="grid sm:grid-cols-2 gap-3">
+        <ToolCard
+          icon={ScrollText}
+          title="Statutory Conditions Cheat Sheet"
+          subtitle="All 14 SCs of the Manitoba Insurance Act"
+          accent="indigo"
+          onClick={() => onNavigate?.('cheatsheet')}
+        />
+        <ToolCard
+          icon={Car}
+          title="MPI Premium Calculator"
+          subtitle="See how DSR, deductibles, and liability shift Autopac premiums"
+          accent="rose"
+          onClick={() => onNavigate?.('mpi')}
+        />
+      </section>
+
       <section>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">14-Day Roadmap</h2>
@@ -152,5 +171,27 @@ function Stat({ icon: Icon, label, value, accent }) {
       </div>
       <div className="mt-1 text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{value}</div>
     </div>
+  )
+}
+
+function ToolCard({ icon: Icon, title, subtitle, accent, onClick }) {
+  const accents = {
+    indigo: 'from-indigo-600 to-indigo-800 hover:from-indigo-700 hover:to-indigo-900 shadow-indigo-900/20',
+    rose:   'from-rose-600 to-rose-800 hover:from-rose-700 hover:to-rose-900 shadow-rose-900/20'
+  }
+  return (
+    <button
+      onClick={onClick}
+      className={`text-left p-5 rounded-2xl bg-gradient-to-br ${accents[accent] ?? accents.indigo} text-white shadow-lg transition flex items-center gap-4`}
+    >
+      <div className="shrink-0 w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-base leading-snug">{title}</h3>
+        <p className="text-white/80 text-xs mt-0.5">{subtitle}</p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-white/70" />
+    </button>
   )
 }
