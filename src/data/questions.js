@@ -19,6 +19,26 @@ export const categories = [
   'Specialty'
 ]
 
+// 15-chapter master list (mirrors curriculum.js — kept separate so the exam
+// engine doesn't need to import the much larger curriculum data).
+export const examChapters = [
+  { chapter: 1,  title: 'Introduction to General Insurance' },
+  { chapter: 2,  title: 'Insurance Contracts' },
+  { chapter: 3,  title: 'Role of Government in Insurance' },
+  { chapter: 4,  title: 'The Insurance Process' },
+  { chapter: 5,  title: 'Property Insurance — Common Characteristics' },
+  { chapter: 6,  title: 'Personal Property (Habitational) Insurance' },
+  { chapter: 7,  title: 'Commercial Property Insurance' },
+  { chapter: 8,  title: 'Principles of Legal Liability' },
+  { chapter: 9,  title: 'Introduction to Liability Insurance' },
+  { chapter: 10, title: 'Liability Insurance Policies (CGL)' },
+  { chapter: 11, title: 'Accident & Sickness and Travel Insurance' },
+  { chapter: 12, title: 'Introduction to Auto Insurance (MPI)' },
+  { chapter: 13, title: 'Auto Insurance — The Policy' },
+  { chapter: 14, title: 'Auto Stat. Conditions, PIPP & No-Fault' },
+  { chapter: 15, title: 'Regulation of Brokers' }
+]
+
 export const questionPool = [
   // ─── Foundations (4) ──────────────────────────────────────────────────
   {
@@ -2108,3 +2128,130 @@ export const questionPool = [
       'Section II excludes business pursuits. A paid home daycare introduces caregiving liability, children\'s injuries, and abuse/molestation exposure — none of which are within ordinary HO scope. A specific endorsement or separate commercial liability policy is essential, and many insurers refuse the risk altogether.'
   }
 ]
+
+// ─────────────────────────────────────────────────────────────────────
+// Map every question into one of the 15 textbook chapters.
+// Default by category, then apply per-question overrides for nuances.
+// ─────────────────────────────────────────────────────────────────────
+
+const DEFAULT_CHAPTER_BY_CATEGORY = {
+  'Foundations':                   1,
+  'Contract Law':                  2,
+  'Indemnity':                     2,
+  'Manitoba Statutory Conditions': 5,
+  'Property':                      6,
+  'Commercial':                    7,
+  'Liability':                     10,
+  'MPI / Autopac':                 13,
+  'Industry & Ethics':             15,
+  'Specialty':                     11
+}
+
+// Per-id overrides where the natural chapter differs from category default.
+// Reviewed individually for textbook alignment.
+const CHAPTER_OVERRIDES = {
+  // Insurance Process (Ch 4)
+  7: 4,    // binder definition
+  10: 4,   // endorsement definition
+
+  // Property statutory conditions belong to Ch 5 (already default)
+
+  // Principles of Legal Liability — Ch 8 (these are the underlying tort principles)
+  31: 8,   // negligence elements
+  40: 8,   // negligence elements
+  124: 8,  // proximate cause
+  125: 8,  // contributory negligence
+  126: 8,  // limitations period
+  127: 8,  // vicarious liability (independent contractor)
+  128: 8,  // strict liability — blasting
+  129: 8,  // compensatory vs punitive
+  130: 8,  // occupier's duty to trespasser
+
+  // Intro to Liability Insurance — Ch 9 (general liability concepts)
+  32: 9,   // occurrence basis
+  45: 9,   // supplementary payments
+  133: 9,  // defense costs separate from limit
+  134: 9,  // claims-made vs occurrence
+
+  // Liability Policies / CGL specifics — Ch 10
+  33: 10,  // products liability scenario
+  34: 10,  // personal injury (CGL)
+  35: 10,  // malpractice
+  42: 10,  // products liability (pizza)
+  43: 10,  // personal injury (CGL)
+  44: 10,  // malpractice
+  46: 10,  // Coverage G / Voluntary Property Damage
+  131: 10, // dog bite Section II
+  132: 10, // completed operations
+  135: 10, // cross-liability
+  136: 10, // premises & operations
+  153: 10, // home daycare exclusion / Section II
+
+  // Government & Regulation — Ch 3
+  56: 3,   // provincial gov regulation (no premium rates)
+  57: 3,   // solvency
+
+  // Industry players — Ch 1 (insurer types, broker vs agent)
+  55: 1,   // broker vs agent
+  58: 1,   // underwriter primary function
+
+  // E&O top cause — Ch 15
+  59: 15,  // E&O top cause
+
+  // Ethics — Ch 15
+  60: 15,  // licence termination ethics
+  61: 15,  // ICM vs IBAM
+  109: 15, // iPad inducement
+  110: 15, // PIPEDA disclosure
+  111: 15, // unbundled service fee
+  112: 15, // trust account
+  113: 15, // tied selling
+
+  // MPI Introduction & Crown system — Ch 12
+  47: 12,  // who provides Basic Autopac
+  66: 12,  // new resident grace period
+  72: 12,  // out-of-province student
+
+  // Auto Statutory Conditions, PIPP & No-Fault — Ch 14
+  50: 14,  // PIPP no-fault description
+  51: 14,  // PIPP income replacement
+  54: 14,  // U.S. driving + PIPP
+  67: 14,  // hit-and-run + PIPP
+  71: 14,  // U.S. liability gap
+  73: 14,  // PIPP waiting period
+  78: 14,  // PIPP death benefits
+  84: 14,  // Florida rental
+  85: 14,  // PIPP non-earner
+
+  // Specialty Travel & A&S — Ch 11
+  62: 11,  // travel premium factors
+  63: 11,  // travel exclusions (food poisoning)
+  142: 11, // jeweller's block / inland marine floater for travelling property
+  145: 11, // trip cancellation vs interruption
+  146: 11, // pre-existing diabetes
+  147: 11, // medication dosage stability
+  148: 11, // emergency evacuation
+  149: 11, // pregnancy exclusion
+  150: 11, // skydiving exclusion
+  151: 11, // pandemic
+  152: 11, // out-of-country medical gap
+
+  // Condominium — Ch 6 (habitational)
+  64: 6,   // IBC 1132 loss assessment
+
+  // Licensing — Ch 15
+  65: 15   // Manitoba 3-level licensing
+}
+
+function chapterFor (q) {
+  return CHAPTER_OVERRIDES[q.id] ?? DEFAULT_CHAPTER_BY_CATEGORY[q.category] ?? 1
+}
+
+// Decorate every question with its chapter assignment.
+questionPool.forEach(q => { q.chapter = chapterFor(q) })
+
+// Helper: get the distribution of questions across chapters (used by the UI
+// to show counts on the chapter chips).
+export function questionsByChapter (chapter) {
+  return questionPool.filter(q => q.chapter === chapter)
+}

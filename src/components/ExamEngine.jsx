@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { categories, questionPool } from '../data/questions'
+import { examChapters, questionPool } from '../data/questions'
 
 const EXAM_LENGTH = 30
 const EXAM_DURATION_SEC = 30 * 60
@@ -34,7 +34,10 @@ function shuffle(arr) {
 }
 
 export default function ExamEngine({ initialMode = 'practice', onExit }) {
-  const { recordExam, examHistory, flaggedQuestions, toggleFlagQuestion, clearFlagged } = useApp()
+  const ctx = useApp()
+  const { recordExam, toggleFlagQuestion, clearFlagged } = ctx
+  const examHistory = ctx.examHistory ?? []
+  const flaggedQuestions = ctx.flaggedQuestions ?? {}
   const [stage, setStage] = useState('setup') // setup | running | review
   const [mode, setMode] = useState(initialMode) // 'practice' | 'exam' | 'drill'
   const [questions, setQuestions] = useState([])
@@ -57,8 +60,8 @@ export default function ExamEngine({ initialMode = 'practice', onExit }) {
 
   const startExam = (chosenMode, opts = {}) => {
     let pool = questionPool
-    if (opts.categoryFilter && opts.categoryFilter !== 'all') {
-      pool = pool.filter(q => q.category === opts.categoryFilter)
+    if (opts.chapterFilter && opts.chapterFilter !== 'all') {
+      pool = pool.filter(q => q.chapter === opts.chapterFilter)
     }
     if (chosenMode === 'drill') {
       pool = pool.filter(q => flaggedQuestions[q.id])
@@ -189,12 +192,12 @@ export default function ExamEngine({ initialMode = 'practice', onExit }) {
 /* ─── Setup ──────────────────────────────────────────────────────────── */
 
 function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
-  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [chapterFilter, setChapterFilter] = useState('all')
 
   const filteredCount = useMemo(() => {
-    if (categoryFilter === 'all') return questionPool.length
-    return questionPool.filter(q => q.category === categoryFilter).length
-  }, [categoryFilter])
+    if (chapterFilter === 'all') return questionPool.length
+    return questionPool.filter(q => q.chapter === chapterFilter).length
+  }, [chapterFilter])
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -208,31 +211,31 @@ function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
       <header>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Mock Exam Engine</h1>
         <p className="mt-2 text-slate-500 dark:text-slate-400 max-w-2xl">
-          Choose a mode and (optionally) drill a single category. Pool size: <strong>{questionPool.length}</strong> questions.
+          Practice by chapter or take a full random exam. Total pool: <strong>{questionPool.length}</strong> questions across 15 textbook chapters.
         </p>
       </header>
 
-      {/* Category filter */}
+      {/* Chapter filter */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2.5">
-          <Filter className="w-3.5 h-3.5" /> Drill a category (optional)
+          <Filter className="w-3.5 h-3.5" /> Practice by chapter
         </div>
         <div className="flex flex-wrap gap-1.5">
           <CategoryChip
-            label="All categories"
-            active={categoryFilter === 'all'}
+            label="Full Random Exam"
+            active={chapterFilter === 'all'}
             count={questionPool.length}
-            onClick={() => setCategoryFilter('all')}
+            onClick={() => setChapterFilter('all')}
           />
-          {categories.map(cat => {
-            const count = questionPool.filter(q => q.category === cat).length
+          {examChapters.map(c => {
+            const count = questionPool.filter(q => q.chapter === c.chapter).length
             return (
               <CategoryChip
-                key={cat}
-                label={cat}
-                active={categoryFilter === cat}
+                key={c.chapter}
+                label={`Ch ${c.chapter} — ${c.title}`}
+                active={chapterFilter === c.chapter}
                 count={count}
-                onClick={() => setCategoryFilter(cat)}
+                onClick={() => setChapterFilter(c.chapter)}
               />
             )
           })}
@@ -247,7 +250,7 @@ function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
           icon={Zap}
           accent="emerald"
           disabled={filteredCount === 0}
-          onClick={() => onStart('practice', { categoryFilter })}
+          onClick={() => onStart('practice', { chapterFilter })}
           cta="Start practice"
         />
         <ModeCard
@@ -257,7 +260,7 @@ function ExamSetup({ onStart, history, flaggedCount, onClearFlagged, onExit }) {
           icon={GraduationCap}
           accent="brand"
           disabled={filteredCount === 0}
-          onClick={() => onStart('exam', { categoryFilter })}
+          onClick={() => onStart('exam', { chapterFilter })}
           cta="Start timed exam"
         />
       </div>

@@ -20,7 +20,9 @@ const links = [
 
 export default function Sidebar({ view, onNavigate }) {
   const { theme, toggleTheme, resetAll, completedDays } = useApp()
-  const pct = Math.round((completedDays.length / 14) * 100)
+  const TOTAL = 15
+  const completedInRange = completedDays.filter(n => n >= 1 && n <= TOTAL).length
+  const pct = Math.round((completedInRange / TOTAL) * 100)
 
   return (
     <aside className="hidden md:flex md:flex-col w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
@@ -31,12 +33,12 @@ export default function Sidebar({ view, onNavigate }) {
           </div>
           <div>
             <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">IBAM Prep</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Fundamentals — 14 Days</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Fundamentals — 15 Chapters</p>
           </div>
         </div>
         <div className="mt-5">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Roadmap Progress</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Chapter Progress</span>
             <span className="text-xs font-bold text-brand-600 dark:text-brand-400">{pct}%</span>
           </div>
           <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
